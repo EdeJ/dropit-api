@@ -39,13 +39,18 @@ public class UserController {
         return CollectionModel.of(users, linkTo(methodOn(UserController.class).getAllUsers()).withSelfRel());
     }
 
-//    @PostMapping("/users")
-//    public User saveUser(@RequestBody User newUser) {
-//        return repository.save(newUser);
-//    }
-
     @PostMapping("/users")
     public ResponseEntity<?> saveUser(@RequestBody User newUser) {
+
+        // check of er al een User is met dit email-adres
+        User existingUser = repository.findByEmail(newUser.getEmail());
+
+        if(existingUser != null) {
+            System.out.println(existingUser);
+        } else {
+            System.out.println("User widt email address " + newUser.getEmail() + " not found in DB");
+        }
+
 
         EntityModel<User> entityModel = assembler.toModel(repository.save(newUser));
 
@@ -57,26 +62,12 @@ public class UserController {
     @GetMapping("/users/{id}")
     public EntityModel<User> getUser(@PathVariable Long id) {
 
-        User user = repository.findById(id) //
+        User user = repository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
 
         return assembler.toModel(user);
     }
 
-//    @PutMapping("/users/{id}")
-//    User replaceEmployee(@RequestBody User newUser, @PathVariable Long id) {
-//
-//        return repository.findById(id)
-//                .map(user -> {
-//                    user.setEmail(newUser.getEmail());
-//                    user.setPassword(newUser.getPassword());
-//                    return repository.save(user);
-//                })
-//                .orElseGet(() -> {
-//                    newUser.setId(id);
-//                    return repository.save(newUser);
-//                });
-//    }
 
     @PutMapping("/users/{id}")
     public ResponseEntity<?> updateUser(@RequestBody User newUser, @PathVariable Long id) {
