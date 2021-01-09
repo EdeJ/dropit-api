@@ -67,13 +67,13 @@ public class UserController {
     }
 
 
-    @GetMapping(value = "/users/email/{email}")
+    @GetMapping(value = "/users/signup-check/{email}")
     public ResponseEntity<Object> getUserByEmail(@PathVariable("email") String email) {
         User user = userService.getUserByEmail(email);
         if(user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(email, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 
