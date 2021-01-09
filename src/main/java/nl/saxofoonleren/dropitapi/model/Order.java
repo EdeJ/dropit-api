@@ -5,6 +5,7 @@ import nl.saxofoonleren.dropitapi.Status;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import java.util.Objects;
 
@@ -18,6 +19,9 @@ public class Order {
 
     private String description;
     private Status status;
+
+    @ManyToOne
+    private User user;
 
     public Order() {
     }
@@ -50,6 +54,14 @@ public class Order {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     @Override

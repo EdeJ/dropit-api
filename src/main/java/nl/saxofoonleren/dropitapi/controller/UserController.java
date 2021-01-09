@@ -3,84 +3,93 @@ package nl.saxofoonleren.dropitapi.controller;
 
 import nl.saxofoonleren.dropitapi.UserModelAssembler;
 import nl.saxofoonleren.dropitapi.exception.UserNotFoundException;
+import nl.saxofoonleren.dropitapi.model.Order;
 import nl.saxofoonleren.dropitapi.model.User;
 import nl.saxofoonleren.dropitapi.repository.UserRepository;
-import org.springframework.hateoas.CollectionModel;
+import nl.saxofoonleren.dropitapi.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
 
-    private final UserRepository repository;
+    private final UserRepository userRepository;
     private final UserModelAssembler assembler;
+    private UserService userService;
 
-    public UserController(UserRepository repository, UserModelAssembler assembler) {
-        this.repository = repository;
+    public UserController(UserRepository userRepository, UserModelAssembler assembler) {
+        this.userRepository = userRepository;
         this.assembler = assembler;
     }
 
+    @Autowired
+    public void setUserService(UserService userService) {
+        this.userService = userService;
+    }
+
     @GetMapping("/users")
-    public CollectionModel<EntityModel<User>> getAllUsers() {
+    public List<User> getAllUsers() {
 
-        List<EntityModel<User>> users = repository.findAll().stream()
-                .map(assembler::toModel)
-                .collect(Collectors.toList());
-
-        return CollectionModel.of(users, linkTo(methodOn(UserController.class).getAllUsers()).withSelfRel());
+        return userRepository.findAll();
     }
 
     @PostMapping("/users")
     public ResponseEntity<?> saveUser(@RequestBody User newUser) {
 
-        // check of er al een User is met dit email-adres
-        User existingUser = repository.findByEmail(newUser.getEmail());
-
-        if(existingUser != null) {
-            System.out.println(existingUser);
-        } else {
-            System.out.println("User widt email address " + newUser.getEmail() + " not found in DB");
-        }
-
-
-        EntityModel<User> entityModel = assembler.toModel(repository.save(newUser));
-
-        return ResponseEntity
-                .created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
-                .body(entityModel);
+        return userService.addUser(newUser);
     }
 
     @GetMapping("/users/{id}")
-    public EntityModel<User> getUser(@PathVariable Long id) {
+    public User getUser(@PathVariable Long id) {
 
-        User user = repository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
 
-        return assembler.toModel(user);
+        User userToReturn = new User();
+        List<Order> orders = user.getOrders();
+        for (Order o : orders) {
+            o.setUser(null);
+        }
+        userToReturn.setOrders(orders);
+        userToReturn.setEmail(user.getEmail());
+
+
+        return userToReturn;
     }
 
 
-    @PutMapping("/users/{id}")
+    @GetMapping(value = "/users/email/{email}")
+    public ResponseEntity<Object> getUserByEmail(@PathVariable("email") String email) {
+        User user = userService.getUserByEmail(email);
+        if(user == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(email, HttpStatus.OK);
+    }
+
+
+
+        @PutMapping("/users/{id}")
     public ResponseEntity<?> updateUser(@RequestBody User newUser, @PathVariable Long id) {
 
-        User updatedUser = repository.findById(id)
+        User updatedUser = userRepository.findById(id)
                 .map(user -> {
                     user.setEmail(newUser.getEmail());
                     user.setPassword(newUser.getPassword());
-                    return repository.save(user);
+                    return userRepository.save(user);
                 })
                 .orElseGet(() -> {
                     newUser.setId(id);
-                    return repository.save(newUser);
+                    return userRepository.save(newUser);
                 });
 
         EntityModel<User> entityModel = assembler.toModel(updatedUser);
@@ -93,7 +102,7 @@ public class UserController {
     @DeleteMapping("/users/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
 
-        repository.deleteById(id);
+        userRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();
     }
