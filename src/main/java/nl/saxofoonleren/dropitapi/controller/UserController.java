@@ -73,7 +73,7 @@ public class UserController {
         if(user == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(user.getEmail(), HttpStatus.OK);
     }
 
 
