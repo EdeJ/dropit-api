@@ -24,8 +24,9 @@ public class UploadController {
     FileUploadService fileUploadService;
 
     @PostMapping
-    public void uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+    public ResponseEntity<Object> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
         fileUploadService.uploadFile(file);
+        return new ResponseEntity<>("File is uploaded successfully", HttpStatus.OK);
     }
 
 //    @PostMapping(value = "/upload", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
